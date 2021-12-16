@@ -4,7 +4,14 @@ import re
 class tokenize(object):
     
     def __init__(self, lang):
-        self.nlp = spacy.load(lang)
+        if lang == "en":
+            self.nlp = spacy.load("en_core_web_sm")
+        elif lang == "fr":
+            self.nlp = spacy.load("fr_core_news_sm")
+        elif lang == "zh":
+            self.nlp = spacy.load("zh_core_web_sm")
+        else:
+            self.nlp = spacy.load(lang)
             
     def tokenizer(self, sentence):
         sentence = re.sub(

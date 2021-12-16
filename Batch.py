@@ -1,5 +1,7 @@
 import torch
-from torchtext import data
+# from torchtext import data
+from torchtext.legacy import data
+
 import numpy as np
 from torch.autograd import Variable
 

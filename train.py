@@ -72,11 +72,11 @@ def main():
     parser.add_argument('-no_cuda', action='store_true')
     parser.add_argument('-SGDR', action='store_true')
     parser.add_argument('-epochs', type=int, default=2)
-    parser.add_argument('-d_model', type=int, default=512)
+    parser.add_argument('-d_model', type=int, default=128)
     parser.add_argument('-n_layers', type=int, default=6)
     parser.add_argument('-heads', type=int, default=8)
     parser.add_argument('-dropout', type=int, default=0.1)
-    parser.add_argument('-batchsize', type=int, default=1500)
+    parser.add_argument('-batchsize', type=int, default=32)
     parser.add_argument('-printevery', type=int, default=100)
     parser.add_argument('-lr', type=int, default=0.0001)
     parser.add_argument('-load_weights')
@@ -87,7 +87,9 @@ def main():
 
     opt = parser.parse_args()
     
-    opt.device = 0 if opt.no_cuda is False else -1
+    no_cuda = opt.no_cuda
+    no_cuda = True
+    opt.device = 0 if no_cuda is False else -1
     if opt.device == 0:
         assert torch.cuda.is_available()
     
