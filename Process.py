@@ -24,7 +24,7 @@ def read_data(opt):
 
 def create_fields(opt):
     
-    spacy_langs = ['en', 'fr', 'de', 'es', 'pt', 'it', 'nl']
+    spacy_langs = ['en', 'fr', 'de', 'es', 'pt', 'it', 'nl', 'zh']
     if opt.src_lang not in spacy_langs:
         print('invalid src language: ' + opt.src_lang + 'supported languages : ' + spacy_langs)  
     if opt.trg_lang not in spacy_langs:
