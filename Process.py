@@ -7,20 +7,22 @@ import os
 import dill as pickle
 
 def read_data(opt):
-    
     if opt.src_data is not None:
         try:
-            opt.src_data = open(opt.src_data).read().strip().split('\n')
+            with open(opt.src_data, encoding="utf-8") as src_input:
+                opt.src_data = [d for d in src_input]
         except:
             print("error: '" + opt.src_data + "' file not found")
             quit()
     
     if opt.trg_data is not None:
         try:
-            opt.trg_data = open(opt.trg_data).read().strip().split('\n')
+            with open(opt.trg_data, encoding="utf-8") as trg_input:
+                opt.trg_data =[d for d in trg_input]
         except:
             print("error: '" + opt.trg_data + "' file not found")
             quit()
+    print(f"read finished with len: {len(opt.src_data)}, {len(opt.trg_data)}")
 
 def create_fields(opt):
     
@@ -55,14 +57,19 @@ def create_dataset(opt, SRC, TRG):
 
     raw_data = {'src' : [line for line in opt.src_data], 'trg': [line for line in opt.trg_data]}
     df = pd.DataFrame(raw_data, columns=["src", "trg"])
-    
+    print("111creating dataset and iterator... ")
+
     mask = (df['src'].str.count(' ') < opt.max_strlen) & (df['trg'].str.count(' ') < opt.max_strlen)
     df = df.loc[mask]
+    print("2222creating dataset and iterator... ")
 
     df.to_csv("translate_transformer_temp.csv", index=False)
-    
+    print("333creating dataset and iterator... ")
+
     data_fields = [('src', SRC), ('trg', TRG)]
     train = data.TabularDataset('./translate_transformer_temp.csv', format='csv', fields=data_fields)
+
+    print("444creating dataset and iterator... ")
 
     train_iter = MyIterator(train, batch_size=opt.batchsize, device=opt.device,
                         repeat=False, sort_key=lambda x: (len(x.src), len(x.trg)),
