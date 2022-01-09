@@ -67,15 +67,17 @@ def create_dataset(opt, SRC, TRG):
     print("333creating dataset and iterator... ")
 
     data_fields = [('src', SRC), ('trg', TRG)]
+    print("333.1111 creating dataset and iterator... ")
     train = data.TabularDataset('./translate_transformer_temp.csv', format='csv', fields=data_fields)
 
     print("444creating dataset and iterator... ")
 
-    train_iter = MyIterator(train, batch_size=opt.batchsize, device=opt.device,
+    train_iter = MyIterator(train, s=opt.batchsize, device=opt.device,
                         repeat=False, sort_key=lambda x: (len(x.src), len(x.trg)),
                         batch_size_fn=batch_size_fn, train=True, shuffle=True)
     
     os.remove('translate_transformer_temp.csv')
+    print("555creating dataset and iterator... ")
 
     if opt.load_weights is None:
         SRC.build_vocab(train)
