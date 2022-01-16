@@ -151,8 +151,9 @@ def main():
         (len(train_id_list), len(valid_id_list)))
     train_dataset = batchify(train_id_list, MAX_TOTAL_LENGTH)
     val_dataset = batchify(valid_id_list, MAX_TOTAL_LENGTH)
+    nbatch_train, nbatch_val = len(train_dataset), len(val_dataset)
     LOG(" %d batches of training data, %d batches of validation data." %
-        (len(train_dataset), len(val_dataset)))
+        (nbatch_train, nbatch_val))
     # en_embed_data = load_embeddings("vocabulary/en_embedding.dat")
     # zh_embed_data = load_embeddings("vocabulary/zh_embedding.dat")
 
@@ -218,44 +219,27 @@ def main():
         loss = loss_func(preds.view(-1, preds.size(-1)), tar_real, ignore_index=tag_pad_id)
         return loss.item()
 
-        # train_loss(loss)
-        # train_accuracy(tar_real, predictions)
     LOG("Params MAX_TOTAL_LENGTH:%d, d_model:%d, dff:%d, num_layers:%d, num_heads:%d." %
         (MAX_TOTAL_LENGTH, d_model, d_ff, num_layers, num_heads))
     for epoch in range(EPOCHS):
         start = time.time()
 
-        # train_loss.reset_states()
-        # train_accuracy.reset_states()
         loss_list = []
-        # inp -> portuguese, tar -> english
         model.train()
         for batch, (inp, tar) in enumerate(get_tensor_batch(train_dataset, inp_pad_id, tag_pad_id)):
             loss_value = train_step(inp, tar, model, loss_func, optimizer)
             loss_list.append(loss_value)
 
             if batch % 1000 == 0:
-                LOG('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(
-                    epoch + 1, batch, sum(loss_list)/len(loss_list), 0.0)) #  train_accuracy.result()))
-        # LOG('Train Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1,
-        #                                                           train_loss.result(),
-        #                                                           train_accuracy.result()))
-
-        # train_loss.reset_states()
-        # train_accuracy.reset_states()
+                LOG('Epoch {} Batch {}/{} Loss {:.4f} Accuracy {:.4f}'.format(
+                    epoch + 1, batch, nbatch_train, sum(loss_list)/len(loss_list), 0.0))
+            if batch % 10000 == 0:
+                torch.save(model.state_dict(), 'weights/model_weights')
+        torch.save(model.state_dict(), 'weights/model_weights')
         with torch.no_grad():
             for batch_data in val_dataset:
                 inp, tar = batch_to_tensor(batch_data, inp_pad_id, tag_pad_id)
                 evaluate_step(inp, tar, model, loss_func)
-
-        # LOG('Valid Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1,
-        #                                                           train_loss.result(),
-        #                                                           train_accuracy.result()))
-
-        # if (epoch + 1) % 5 == 0:
-        #     ckpt_save_path = ckpt_manager.save()
-        #     print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
-        #                                                         ckpt_save_path))
 
         print('Time taken for 1 epoch: {} secs\n'.format(time.time() - start))
 
