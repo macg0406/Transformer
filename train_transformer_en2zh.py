@@ -17,14 +17,15 @@ from Batch import create_masks
 # import torch.nn.functional as F
 
 EPOCHS = 30
-MAX_TOTAL_LENGTH = 2500
-d_model = 384
+MAX_TOTAL_LENGTH = 3500
+d_model = 256
 d_ff = 2048
-num_layers = 4
+num_layers = 3
 num_heads = 8
 dropout_rate = 0.1
-checkpoint_path = "./checkpoints/train_en2zh"
+# checkpoint_path = "./checkpoints/train_en2zh"
 data_dump_path = "datasets_en2zh.dat"
+checkpoint_path = "weights/model_weights"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -100,8 +101,8 @@ def read_data():
     valid_list = []
     load_file("data/translation2019zh_valid.json", valid_list)
     LOG(len(valid_list))
-    load_file("data/translation2019zh_valid.json", train_list)
-    # load_file("data/translation2019zh_train.json", train_list)
+    # load_file("data/translation2019zh_valid.json", train_list)
+    load_file("data/translation2019zh_train.json", train_list)
     LOG(len(train_list))
     
     valid_id_list = [encode_sentence(en, zh, tokenizer_en, tokenizer_zh)
@@ -174,6 +175,10 @@ def main():
     #                           rate=dropout_rate)
     model = Transformer(input_vocab_size, target_vocab_size, d_model, num_layers, num_heads, dropout_rate)
     
+    if os.path.exists(checkpoint_path):
+        model.load_state_dict(torch.load(checkpoint_path))
+        LOG(f"Load model from {checkpoint_path}.")
+
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.98), eps=1e-9)
     loss_func = torch.nn.functional.cross_entropy
     # ckpt = tf.train.Checkpoint(transformer=transformer,
@@ -234,8 +239,8 @@ def main():
                 LOG('Epoch {} Batch {}/{} Loss {:.4f} Accuracy {:.4f}'.format(
                     epoch + 1, batch, nbatch_train, sum(loss_list)/len(loss_list), 0.0))
             if batch % 10000 == 0:
-                torch.save(model.state_dict(), 'weights/model_weights')
-        torch.save(model.state_dict(), 'weights/model_weights')
+                torch.save(model.state_dict(), checkpoint_path)
+        torch.save(model.state_dict(), checkpoint_path)
         with torch.no_grad():
             for batch_data in val_dataset:
                 inp, tar = batch_to_tensor(batch_data, inp_pad_id, tag_pad_id)
