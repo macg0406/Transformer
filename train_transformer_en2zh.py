@@ -1,10 +1,13 @@
 # import tensorflow as tf
 
+import pickle
 import os
 import json
 import time
 import joblib
 import random
+import array
+
 from tqdm import tqdm
 import numpy as np
 # from transformer_tf import Transformer, CustomSchedule, create_masks
@@ -24,7 +27,7 @@ num_layers = 3
 num_heads = 8
 dropout_rate = 0.1
 # checkpoint_path = "./checkpoints/train_en2zh"
-data_dump_path = "datasets_en2zh.dat"
+data_dump_path = "datasets_en2zh.pkl"
 checkpoint_path = "weights/model_weights"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -47,11 +50,17 @@ def LOG(message):
 #     return tf.reduce_mean(loss_)
 
 
-def load_file(filename, result_list):
+def load_file(filename, result_list, tokenizer_en, tokenizer_zh):
     with open(filename) as corpus:
         for line in corpus:
             data = json.loads(line)
-            result_list.append((data["english"], data["chinese"]))
+            ids_en = tokenizer_en.convert_sent_to_ids(data["english"])
+            ids_zh = tokenizer_zh.convert_sent_to_ids(data["chinese"])
+            ids_en = array.array("H", ids_en)
+            ids_zh = array.array("H", ids_zh)
+            result_list.append((ids_en, ids_zh))
+            if len(result_list) % 100000 == 0:
+                print(len(result_list))
             
 
 def encode_sentence(lang1, lang2, tokenizer_1, tokenizer_2):
@@ -90,7 +99,9 @@ def batchify(data_id_list, max_total_length):
 def read_data():
     if os.path.exists(data_dump_path):
         LOG("Load data from %s." % data_dump_path)
-        return joblib.load(data_dump_path)
+        with open(data_dump_path, "rb") as fin:
+            data = pickle.load(fin)
+        return data
     
     tokenizer_zh = SPMTokenize(lang="en")  # tokenization.FullTokenizer("vocabulary/zh_vocab.txt")
     tokenizer_en = SPMTokenize(lang="zh")  # tokenization.FullTokenizer("vocabulary/en_vocab.txt")
@@ -99,24 +110,20 @@ def read_data():
     
     train_list = []
     valid_list = []
-    load_file("data/translation2019zh_valid.json", valid_list)
+    load_file("data/translation2019zh_valid.json", valid_list, tokenizer_en, tokenizer_zh)
     LOG(len(valid_list))
     # load_file("data/translation2019zh_valid.json", train_list)
-    load_file("data/translation2019zh_train.json", train_list)
+    load_file("data/translation2019zh_train.json", train_list, tokenizer_en, tokenizer_zh)
     LOG(len(train_list))
-    
-    valid_id_list = [encode_sentence(en, zh, tokenizer_en, tokenizer_zh)
-                     for en, zh in valid_list]
-    LOG(len(valid_id_list))
-    train_id_list = [encode_sentence(en, zh, tokenizer_en, tokenizer_zh)
-                     for en, zh in tqdm(train_list, desc="processing traindata")]
-    LOG(len(train_id_list))
     
     input_vocab_size = vocab_size_en
     target_vocab_size = vocab_size_zh
-    joblib.dump((train_id_list, valid_id_list, input_vocab_size,
-                 target_vocab_size, tokenizer_en.pad_id, tokenizer_zh.pad_id), data_dump_path)
-    return train_id_list, valid_id_list, input_vocab_size, target_vocab_size, tokenizer_en.pad_id, tokenizer_zh.pad_id
+    with open(data_dump_path, "wb") as fin:
+        pickle.dump((train_list, valid_list, input_vocab_size,
+                     target_vocab_size, tokenizer_en.pad_id, tokenizer_zh.pad_id), fin)
+    # joblib.dump((train_list, valid_list, input_vocab_size,
+    #              target_vocab_size, tokenizer_en.pad_id, tokenizer_zh.pad_id), data_dump_path)
+    return train_list, valid_list, input_vocab_size, target_vocab_size, tokenizer_en.pad_id, tokenizer_zh.pad_id
 
 
 def batch_to_tensor(batch_data, inp_pad_id, tar_pad_id):
@@ -250,4 +257,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    read_data()
